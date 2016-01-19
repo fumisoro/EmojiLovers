@@ -39,7 +39,7 @@ class  New_l
       @@code += line
     end
     result = sentences
-    p result
+    syntax_analysis result
   end
 
   def get_token(text = nil)
@@ -239,6 +239,11 @@ class  New_l
       raise Exception, "unexpected token"
     end
   end
+
+  def syntax_analysis result
+    p result
+  end
+
 
   def eval(exp)
     p "evalスタート"
