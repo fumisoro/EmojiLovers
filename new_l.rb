@@ -18,6 +18,7 @@ class  New_l
     ')' => :rpar,
     'if' => :if,
     'elsif' => :elsif,
+    'else' => :else,
     'while' => :while,
     'print' => :print,
     'def' => :def,
@@ -155,12 +156,18 @@ class  New_l
     result = [:if, cond, lines]
     token = get_token
     while (token == :elsif) do
-      result << :elsif
+      result << token
       result << condition_parser
       result << block_parser
       token = get_token
     end
-    unget_token token
+    if (token == :else)
+      result << token
+      result << block_parser
+    else
+      unget_token token
+    end
+
     return result
   end
 
@@ -188,7 +195,6 @@ class  New_l
     if :lblock == get_token
       @@in_block = true
       lines = sentences
-      binding.pry
       return lines
     end
   end
@@ -260,16 +266,19 @@ class  New_l
   def eval(ast)
     p "evalスタート"
     if ast.instance_of? Array
-      p ast.size.to_s + "だよーん"
+      p ast
       case ast[0]
       when :block
         eval(ast[1])
       when :assignment
         @@space[(ast[1])] = eval(ast[2])
-        p @@space
-        binding.pry
-      when :if
-
+      when :if, :elsif
+        if condition_eval ast[1]
+          eval(ast[2])
+        else
+          ast.slice!(0,3)
+          eval(ast)
+        end
       when :add
         return eval(ast[1]) + eval(ast[2])
       when :sub
@@ -287,7 +296,6 @@ class  New_l
         p "evalおわり"
         return ast
       elsif ast.is_a? String
-        binding.pry
         if @@space.keys.include? ast
           return @@space[ast].to_f
         else
@@ -296,6 +304,34 @@ class  New_l
       end
     end
   end
+
+  def condition_eval cond
+    case cond[0]
+    when :equal
+      if(eval(cond[1]) == eval(cond[2]))
+        binding.pry
+        return true
+      end
+    when :more
+      if (eval(cond[1]) < eval(cond[2]))
+        return true
+      end
+    when :more_or_equal
+      if (eval(cond[1]) <= eval(cond[2]))
+        return true
+      end
+    when :less
+      if (eval(cond[1]) > eval(cond[2]))
+        return true
+      end
+    when :less_or_equal
+      if (eval(cond[1]) >= eval(cond[2]))
+        return true
+      end
+    end
+    return false
+  end
+
 end
 
 nl = New_l.new
