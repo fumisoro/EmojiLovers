@@ -17,6 +17,7 @@ class  New_l
     '(' => :lpar,
     ')' => :rpar,
     'if' => :if,
+    'elsif' => :elsif,
     'while' => :while,
     'print' => :print,
     'def' => :def,
@@ -28,7 +29,6 @@ class  New_l
   @@in_block = false
   @@space = {}
   @@tokens = []
-  @@mode
    #式 := 項 (('+'|'-')項)*
    #項 := 因子 (('*'|'/')因子)*
    #因子 := '-' ? (リテラル| '(' 式 ')')
@@ -82,8 +82,8 @@ class  New_l
     p "unget前のcodeは#{@@code}"
     if token.is_a? Numeric
       @@code = token.to_s + @@code
-    elsif KEYWORDS.index(token)
-      @@code = KEYWORDS.index(token) + @@code
+    elsif KEYWORDS.key(token)
+      @@code = KEYWORDS.key(token) + @@code
     elsif token
       @@code = token + @@code
     end
@@ -153,6 +153,14 @@ class  New_l
     cond = condition_parser
     lines = block_parser
     result = [:if, cond, lines]
+    token = get_token
+    while (token == :elsif) do
+      result << :elsif
+      result << condition_parser
+      result << block_parser
+      token = get_token
+    end
+    unget_token token
     return result
   end
 
@@ -242,29 +250,50 @@ class  New_l
 
   def syntax_analysis result
     p result
+    i = 0
+    while i < result.size do
+      eval result[i]
+      i += 1
+    end
   end
 
-
-  def eval(exp)
+  def eval(ast)
     p "evalスタート"
-    if exp.instance_of? Array
-      case exp[0]
+    if ast.instance_of? Array
+      p ast.size.to_s + "だよーん"
+      case ast[0]
+      when :block
+        eval(ast[1])
+      when :assignment
+        @@space[(ast[1])] = eval(ast[2])
+        p @@space
+        binding.pry
+      when :if
+
       when :add
-        p "evalおわり"
-        return eval(exp[1]) + eval(exp[2])
+        return eval(ast[1]) + eval(ast[2])
       when :sub
         p "evalおわり"
-        return eval(exp[1]) - eval(exp[2])
+        return eval(ast[1]) - eval(ast[2])
       when :mul
         p "evalおわり"
-        return eval(exp[1]) * eval(exp[2])
+        return eval(ast[1]) * eval(ast[2])
       when :div
         p "evalおわり"
-        return eval(exp[1]) / eval(exp[2])
+        return eval(ast[1]) / eval(ast[2])
       end
     else
-      p "evalおわり"
-      return exp
+      if ast.is_a? Numeric
+        p "evalおわり"
+        return ast
+      elsif ast.is_a? String
+        binding.pry
+        if @@space.keys.include? ast
+          return @@space[ast].to_f
+        else
+          return ast
+        end
+      end
     end
   end
 end

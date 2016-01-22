@@ -1,14 +1,11 @@
-def hello (){
-  a = 0
+a = 20 + 20
+a = 50
+b = 19
+if(a == 10){
+  b = 10 + r
+}elsif(a == 11){
+  c = 10
+}elsif(a == 12){
+  d = 14
 }
-a = 0 + 10
-f1 = 0
-f2 = 4 * 20 - f1
-while(a != 10){
-  if(a < 5){
-    print wow
-  }
-  print a
-  a = a + 10
-}
-
+v = 200
