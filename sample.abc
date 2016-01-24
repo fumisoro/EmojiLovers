@@ -1,14 +1,14 @@
-a = 20 + 20 * 20
-a = 50
-b = 19
-a = 12
-if(a == 10){
-  b = 10 + a
-}elsif(a == 11){
-  c = 10
-}elsif(a == 12){
-  d = 14
-}else{
-  a = 10000
+f0 = 0
+f1 = 1
+MAX = 100000
+
+while(f1<MAX) {
+  fib()
 }
-v = 200
+
+def fib(){
+  print f1
+  f2 = f1 + f0
+  f0 = f1
+  f1 = f2
+}

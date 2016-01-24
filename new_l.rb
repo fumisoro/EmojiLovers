@@ -1,5 +1,6 @@
 require 'pry'
 class  New_l
+  @@debug = false
   @@code = ''
   KEYWORDS = {
     '+' => :add,
@@ -26,19 +27,18 @@ class  New_l
     '}' => :rblock
   }
 
-
   @@in_block = false
   @@space = {}
   @@tokens = []
-   #式 := 項 (('+'|'-')項)*
-   #項 := 因子 (('*'|'/')因子)*
-   #因子 := '-' ? (リテラル| '(' 式 ')')
+  @@def_tokens = {}
+  @@def_args = {}
 
    def init
     @@file = open(ARGV[0], "r").read #ファイル読み込み
     @@file.each_line do |line|
       @@code += line
     end
+    p @@code if @@debug
     result = sentences
     syntax_analysis result
   end
@@ -46,23 +46,22 @@ class  New_l
   def get_token(text = nil)
     temp = @@code
     temp = text if text
-    p "get_tokenスタート"
-    p temp if text
+    p "get_tokenスタート" if @@debug
     if temp =~ /\A\s*(#{KEYWORDS.keys.map{|t| Regexp.escape(t)}.join('|')})/
       temp = $'
-      p "演算子#{KEYWORDS[$1]}"
-      p "get_tokenおわり"
+      p "演算子#{KEYWORDS[$1]}" if @@debug
+      p "get_tokenおわり" if @@debug
       @@code = temp unless text
       return KEYWORDS[$1]
     elsif temp =~ /\A\s*([0-9.]+)/
       temp = $'
-      p "数値#{$1.to_f}"
-      p "get_tokenおわり"
+      p "数値#{$1.to_f}" if @@debug
+      p "get_tokenおわり" if @@debug
       @@code = temp unless text
       return $1.to_f
     elsif temp =~ /\A\s*([a-zA-Z][a-zA-Z0-9_]*)/
       temp = $'
-      p "変数#{$1}"
+      p "変数#{$1}" if @@debug
       @@code = temp unless text
       return $1
     elsif temp =~ /\A\s*(\;)/
@@ -70,17 +69,17 @@ class  New_l
       @@code = temp unless text
       return :sem
     elsif temp =~ /\A\s*\z/
-      p "get_tokenがnilおわり"
+      p "get_tokenがnilおわり" if @@debug
       return nil
     end
-    p "get_tokenがbadおわり"
+    p "get_tokenがbadおわり" if @@debug
     return :bad_token
   end
 
   def unget_token(token)
-    p "unget_tokenスタート"
-    p "tokenは#{token}"
-    p "unget前のcodeは#{@@code}"
+    p "unget_tokenスタート" if @@debug
+    p "tokenは#{token}" if @@debug
+    p "unget前のcodeは#{@@code}" if @@debug
     if token.is_a? Numeric
       @@code = token.to_s + @@code
     elsif KEYWORDS.key(token)
@@ -88,8 +87,8 @@ class  New_l
     elsif token
       @@code = token + @@code
     end
-    p "unget後のcodeは#{@@code}"
-    p "unget_tokenおわり"
+    p "unget後のcodeは#{@@code}" if @@debug
+    p "unget_tokenおわり" if @@debug
   end
 
   def sentences
@@ -127,17 +126,21 @@ class  New_l
       op = get_token
       case op
       when :assignment
-        p @@in_block
+        p @@in_block  if @@debug
         return [:assignment, token, expression]
+      when :lpar
+        return [:execute, token, args_parser]
       end
     end
   end
 
   def def_process
     name = get_token
-    arg = arg_parser
+    args = args_parser
     lines = block_parser
-    return [:def, name, arg, lines]
+    result = [:def, name, args, lines]
+    @@def_tokens[name] = [args,lines]
+    return result
   end
 
   def print_process
@@ -167,14 +170,15 @@ class  New_l
     else
       unget_token token
     end
-
     return result
   end
 
-  def arg_parser
+  def args_parser
     @@code =~ /\A\s*\((.*?)\)/
+    return nil unless :lpar == get_token
+    token = get_token
     @@code = $'
-    return $1
+    return token
   end
 
   def condition_parser
@@ -200,7 +204,7 @@ class  New_l
   end
 
   def expression
-    p "expressionスタート"
+    p "expressionスタート" if @@debug
     result = term
     while true
       token = get_token
@@ -210,12 +214,12 @@ class  New_l
       end
       result = [token, result, term]
     end
-    p "expressionおわり"
+    p "expressionおわり" if @@debug
     return result
   end
 
   def term
-    p "termスタート"
+    p "termスタート" if @@debug
     result = factor
     while true
       token = get_token
@@ -225,12 +229,12 @@ class  New_l
       end
       result = [token, result, factor]
     end
-    p "term終わり"
+    p "term終わり" if @@debug
     return result
   end
 
   def factor
-    p "factorスタート"
+    p "factorスタート" if @@debug
     token = get_token
     minusflg = 1
     if token == :sub
@@ -238,7 +242,7 @@ class  New_l
       token = get_token
     end
     if token.is_a? Numeric
-      p "factorおわり"
+      p "factorおわり" if @@debug
       return token * minusflg
     elsif token.is_a? String
       return token
@@ -247,7 +251,7 @@ class  New_l
       unless get_token == :rpar
         raise Exception, "unexpected token"
       end
-      p "factorおわり"
+      p "factorおわり" if @@debug
       return [:mul, minusflg, result]
     else
       raise Exception, "unexpected token"
@@ -255,20 +259,22 @@ class  New_l
   end
 
   def syntax_analysis result
-    p result
+    p @@def_tokens if @@debug
+    p result if @@debug
     i = 0
     while i < result.size do
       eval result[i]
       i += 1
     end
+    p @@space if @@debug
   end
 
   def eval(ast)
-    p "evalスタート"
+    p "evalスタート" if @@debug
     if ast.instance_of? Array
-      p ast
+      p ast if @@debug
       case ast[0]
-      when :block
+      when :block, :def
         eval(ast[1])
       when :assignment
         @@space[(ast[1])] = eval(ast[2])
@@ -279,25 +285,39 @@ class  New_l
           ast.slice!(0,3)
           eval(ast)
         end
+      when :else
+        eval(ast[1])
+      when :print
+        p eval(ast[1])
+      when :while
+        while condition_eval ast[1] do
+          syntax_analysis(ast[2])
+        end
+      when :execute
+        @@def_args[@@def_tokens[ast[1]][0]] = eval(ast[2])
+        syntax_analysis(@@def_tokens[ast[1]][1])
+        @@def_args = {}
       when :add
         return eval(ast[1]) + eval(ast[2])
       when :sub
-        p "evalおわり"
+        p "evalおわり" if @@debug
         return eval(ast[1]) - eval(ast[2])
       when :mul
-        p "evalおわり"
+        p "evalおわり" if @@debug
         return eval(ast[1]) * eval(ast[2])
       when :div
-        p "evalおわり"
+        p "evalおわり" if @@debug
         return eval(ast[1]) / eval(ast[2])
       end
     else
       if ast.is_a? Numeric
-        p "evalおわり"
-        return ast
+        p "evalおわり" if @@debug
+        return ast.to_f
       elsif ast.is_a? String
         if @@space.keys.include? ast
           return @@space[ast].to_f
+        elsif @@def_args.keys.include? ast
+          return @@def_args[ast].to_f
         else
           return ast
         end
@@ -309,7 +329,6 @@ class  New_l
     case cond[0]
     when :equal
       if(eval(cond[1]) == eval(cond[2]))
-        binding.pry
         return true
       end
     when :more
@@ -336,4 +355,3 @@ end
 
 nl = New_l.new
 nl.init
-
