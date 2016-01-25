@@ -282,8 +282,7 @@ class  New_l
         if condition_eval ast[1]
           eval(ast[2])
         else
-          ast.slice!(0,3)
-          eval(ast)
+
         end
       when :else
         eval(ast[1])
