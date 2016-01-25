@@ -8,21 +8,22 @@ class  New_l
     '*' => :mul,
     '/' => :div,
     '%' => :mod,
-    '>=' => :less_or_equal,
-    "<=" => :more_or_equal,
-    '>' => :less,
-    '<' => :more,
-    '==' => :equal,
+    '🐱' => :less_or_equal,
+    '🐎' => :more_or_equal,
+    '🐭' => :less,
+    '🐘' => :more,
+    '👯' => :equal,
     '!=' => :not_equal,
-    '=' => :assignment,
+    '📋' => :assignment,
     '(' => :lpar,
     ')' => :rpar,
-    'if' => :if,
-    'elsif' => :elsif,
-    'else' => :else,
-    'while' => :while,
-    'print' => :print,
-    'def' => :def,
+    '👍' => :if,
+    '👉' => :elsif,
+    '👎' => :else,
+    '➰' => :while,
+    '🍣' => :print,
+    '🎤' => :def,
+    'return' => :return,
     '{' => :lblock,
     '}' => :rblock
   }
@@ -35,6 +36,9 @@ class  New_l
 
    def init
     @@file = open(ARGV[0], "r").read #ファイル読み込み
+    unless File.extname(ARGV[0]) =~ /\A\.I_can_not_live_without_emoji/
+      raise EmojiLoversError, "ここから先は絵文字主義者専用です。"
+    end
     @@file.each_line do |line|
       @@code += line
     end
@@ -93,7 +97,7 @@ class  New_l
 
   def sentences
     unless s = sentence
-      raise Exception, "やばす"
+      raise Exception, "コードをもう一度見なおしてください。"
     end
     result = [:block, s]
     while s = sentence
@@ -122,6 +126,8 @@ class  New_l
       return if_process
     when :while
       return while_process
+    when :return
+      return [:return, get_token]
     else
       op = get_token
       case op
@@ -129,6 +135,7 @@ class  New_l
         p @@in_block  if @@debug
         return [:assignment, token, expression]
       when :lpar
+        unget_token op
         return [:execute, token, args_parser]
       end
     end
@@ -175,10 +182,11 @@ class  New_l
 
   def args_parser
     @@code =~ /\A\s*\((.*?)\)/
-    return nil unless :lpar == get_token
-    token = get_token
     @@code = $'
-    return token
+    result = []
+    result = "#{$1}".split(/\s*,\s*/) if $1
+    result.map!{|t| get_token t}
+    return result
   end
 
   def condition_parser
@@ -253,6 +261,8 @@ class  New_l
       end
       p "factorおわり" if @@debug
       return [:mul, minusflg, result]
+    elsif token == nil
+      return nil
     else
       raise Exception, "unexpected token"
     end
@@ -293,9 +303,13 @@ class  New_l
           syntax_analysis(ast[2])
         end
       when :execute
-        @@def_args[@@def_tokens[ast[1]][0]] = eval(ast[2])
+        @@def_tokens[ast[1]][0].each_with_index do |t, i|
+          @@def_args[t] = eval(ast[2][i])
+        end
         syntax_analysis(@@def_tokens[ast[1]][1])
         @@def_args = {}
+      when :return
+        return eval(ast[1])
       when :add
         return eval(ast[1]) + eval(ast[2])
       when :sub
@@ -351,6 +365,8 @@ class  New_l
   end
 
 end
+
+class EmojiLoversError < StandardError; end
 
 nl = New_l.new
 nl.init
