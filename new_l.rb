@@ -13,7 +13,7 @@ class  New_l
     '🐭' => :less,
     '🐘' => :more,
     '👯' => :equal,
-    '!=' => :not_equal,
+    '👫' => :not_equal,
     '📋' => :assignment,
     '(' => :lpar,
     ')' => :rpar,
