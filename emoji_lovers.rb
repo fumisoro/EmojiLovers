@@ -7,10 +7,10 @@ class  EmojiLovers
     '*' => :mul,
     '/' => :div,
     '%' => :mod,
-    '🐱' => :less_or_equal,
-    '🐎' => :more_or_equal,
-    '🐭' => :less,
-    '🐘' => :more,
+    '🐎' => :less_or_equal,
+    '🐱' => :more_or_equal,
+    '🐘' => :less,
+    '🐭' => :more,
     '👯' => :equal,
     '👫' => :not_equal,
     '📋' => :assignment,
@@ -291,10 +291,18 @@ class  EmojiLovers
         if condition_eval ast[1]
           eval(ast[2])
         else
-
+          index = 0
+          while true
+            index += 3
+            if ast[index] == :else 
+              eval ast[index + 1]
+              break 
+            end
+            if condition_eval ast[index + 1]
+              eval ast[index + 2]
+            end
+          end
         end
-      when :else
-        eval(ast[1])
       when :print
         p eval(ast[1])
       when :while
