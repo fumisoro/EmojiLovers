@@ -1,5 +1,4 @@
-require 'pry'
-class  New_l
+class  EmojiLovers
   @@debug = false
   @@code = ''
   KEYWORDS = {
@@ -368,5 +367,5 @@ end
 
 class EmojiLoversError < StandardError; end
 
-nl = New_l.new
-nl.init
+el = EmojiLovers.new
+el.init
